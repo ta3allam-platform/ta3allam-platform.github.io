@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تعلّم — منصة المهارات التكنولوجية والتطبيقية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Firebase (compat SDK — بدون خطوة Build) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+  /* ============================================
+     الهوية البصرية — منصة "تعلّم"
+     Deep Indigo / Electric Cyan · SaaS تقني احترافي
+     ============================================ */
+  :root{
+    --bg:#0b0e17;
+    --bg-panel:#12161f;
+    --bg-panel-2:#171c28;
+    --bg-elevated:#1c2230;
+    --line:rgba(255,255,255,0.08);
+    --line-strong:rgba(94,169,255,0.35);
+    --indigo:#4f5dff;
+    --cyan:#22d3ee;
+    --cyan-soft:rgba(34,211,238,0.12);
+    --white:#f4f6fb;
+    --text-soft:rgba(244,246,251,0.62);
+    --text-faint:rgba(244,246,251,0.36);
+    --danger:#ff5c5c;
+    --success:#3ddc97;
+    --font-ar:'Tajawal','Segoe UI','Tahoma',sans-serif;
+    --radius-lg:22px;
+    --radius-md:14px;
+    --radius-sm:9px;
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{font-family:var(--font-ar); background:var(--bg); color:var(--white); min-height:100%; -webkit-font-smoothing:antialiased;}
+  body{position:relative; overflow-x:hidden;}
+  ::selection{background:var(--cyan); color:#04121a;}
+  a{color:inherit; text-decoration:none;}
+  button{font-family:var(--font-ar); cursor:pointer;}
+  input, textarea, select{font-family:var(--font-ar);}
+
+  .bg-layer{position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 800px 500px at 85% -5%, rgba(79,93,255,0.16), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 0% 100%, rgba(34,211,238,0.10), transparent 60%),
+      linear-gradient(170deg, var(--bg) 0%, #0d111b 60%, #0a0d15 100%);
+  }
+
+  /* ---------- شريط علوي ---------- */
+  .navbar{
+    position:sticky; top:0; z-index:60; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 26px; background:rgba(11,14,23,0.75); backdrop-filter:blur(14px); border-bottom:1px solid var(--line);
+  }
+  .nav-brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; color:var(--white);}
+  .nav-brand .nb-mark{width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg, var(--indigo), var(--cyan)); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; color:#fff;}
+  .nav-links{display:flex; align-items:center; gap:8px;}
+  .nav-link{font-size:14px; font-weight:700; color:var(--text-soft); padding:9px 16px; border-radius:100px; transition:color 0.2s, background 0.2s;}
+  .nav-link:hover, .nav-link.active{color:var(--white); background:rgba(255,255,255,0.06);}
+  .nav-link.admin{color:var(--cyan);}
+  .btn{
+    font-weight:700; font-size:14px; padding:10px 20px; border-radius:100px; border:1px solid var(--line-strong);
+    background:transparent; color:var(--white); transition:all 0.2s var(--ease);
+  }
+  .btn:hover{background:rgba(94,169,255,0.1);}
+  .btn-primary{background:linear-gradient(120deg, var(--indigo), #3f4bdb); border:none; box-shadow:0 8px 22px rgba(79,93,255,0.28);}
+  .btn-primary:hover{filter:brightness(1.12); transform:translateY(-1px);}
+  .btn-danger{border-color:rgba(255,92,92,0.4); color:var(--danger);}
+  .btn-danger:hover{background:rgba(255,92,92,0.1);}
+  .btn-sm{padding:7px 14px; font-size:12.5px;}
+  .user-chip{display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--text-soft);}
+  .user-avatar{width:30px; height:30px; border-radius:50%; background:var(--cyan-soft); border:1px solid var(--line-strong); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; color:var(--cyan);}
+
+  /* ---------- تخطيط عام ---------- */
+  #app{position:relative; z-index:2; min-height:calc(100vh - 66px); padding:40px 26px 80px;}
+  .wrap{max-width:1180px; margin:0 auto;}
+  .wrap-narrow{max-width:560px; margin:0 auto;}
+
+  .eyebrow{display:inline-flex; align-items:center; gap:9px; font-size:13px; font-weight:700; color:var(--cyan); letter-spacing:0.4px; margin-bottom:14px;}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan); box-shadow:0 0 8px var(--cyan);}
+  h1.page-title{font-size:clamp(28px,3.6vw,44px); font-weight:900; color:var(--white); line-height:1.2;}
+  p.page-lede{font-size:15.5px; color:var(--text-soft); line-height:1.7; margin-top:10px; max-width:620px;}
+
+  .empty-note{text-align:center; padding:60px 20px; color:var(--text-faint); font-size:14.5px;}
+  .spinner{width:26px; height:26px; border-radius:50%; border:3px solid rgba(255,255,255,0.1); border-top-color:var(--cyan); animation:spin 0.8s linear infinite; margin:60px auto;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- فلاتر الفئات ---------- */
+  .cat-tabs{display:flex; gap:8px; flex-wrap:wrap; margin:28px 0 34px;}
+  .cat-tab{font-size:13px; font-weight:700; padding:9px 18px; border-radius:100px; border:1px solid var(--line); background:var(--bg-panel); color:var(--text-soft); transition:all 0.2s;}
+  .cat-tab:hover{border-color:var(--line-strong); color:var(--white);}
+  .cat-tab.active{background:var(--cyan-soft); border-color:var(--cyan); color:var(--cyan);}
+
+  /* ---------- بطاقات الكورسات ---------- */
+  .courses-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  .course-card{
+    background:linear-gradient(160deg, var(--bg-panel), var(--bg-panel-2));
+    border:1px solid var(--line); border-radius:var(--radius-lg); padding:26px;
+    display:flex; flex-direction:column; gap:14px; transition:transform 0.25s var(--ease), border-color 0.25s, box-shadow 0.25s;
+  }
+  .course-card:hover{transform:translateY(-4px); border-color:var(--line-strong); box-shadow:0 18px 40px rgba(0,0,0,0.35);}
+  .course-icon{width:52px; height:52px; border-radius:14px; background:var(--cyan-soft); border:1px solid var(--line-strong); display:flex; align-items:center; justify-content:center; font-size:24px;}
+  .course-cat-tag{font-size:11.5px; font-weight:700; color:var(--cyan); letter-spacing:0.5px;}
+  .course-card h3{font-size:19px; font-weight:800; color:var(--white); line-height:1.35;}
+  .course-card p{font-size:13.5px; color:var(--text-soft); line-height:1.6; flex:1;}
+  .course-meta{font-size:12.5px; color:var(--text-faint); display:flex; align-items:center; gap:6px;}
+
+  /* ---------- صفحة الكورس ---------- */
+  .course-header{display:flex; align-items:flex-start; gap:20px; margin-bottom:36px;}
+  .course-header .course-icon{width:70px; height:70px; font-size:32px; border-radius:18px; flex-shrink:0;}
+  .lectures-list{display:flex; flex-direction:column; gap:10px;}
+  .lecture-row{
+    display:flex; align-items:center; gap:16px;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius-md); padding:16px 20px;
+    transition:border-color 0.2s, background 0.2s;
+  }
+  .lecture-row:hover{border-color:var(--line-strong); background:var(--bg-panel-2);}
+  .lecture-num{width:34px; height:34px; flex-shrink:0; border-radius:9px; background:var(--cyan-soft); color:var(--cyan); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px;}
+  .lecture-info{flex:1;}
+  .lecture-info h4{font-size:15px; font-weight:700; color:var(--white);}
+  .lecture-info p{font-size:12.5px; color:var(--text-faint); margin-top:3px;}
+  .lecture-lock{color:var(--text-faint); font-size:12px; display:flex; align-items:center; gap:6px;}
+
+  /* ---------- صفحة المحاضرة ---------- */
+  .video-frame{position:relative; width:100%; padding-top:56.25%; border-radius:var(--radius-lg); overflow:hidden; background:#000; border:1px solid var(--line); margin-bottom:28px;}
+  .video-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+  .materials-box{background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius-md); padding:22px;}
+  .materials-box h4{font-size:14px; font-weight:800; color:var(--cyan); margin-bottom:14px;}
+  .material-item{display:flex; align-items:center; justify-content:between; gap:10px; padding:11px 14px; border-radius:var(--radius-sm); background:var(--bg-panel-2); margin-bottom:8px;}
+  .material-item span{flex:1; font-size:13.5px; color:var(--white);}
+  .material-item a{font-size:12.5px; font-weight:700; color:var(--cyan);}
+
+  /* ---------- فورمات (تسجيل / لوحة تحكم) ---------- */
+  .auth-card, .form-card{background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius-lg); padding:34px;}
+  .field{display:flex; flex-direction:column; gap:7px; margin-bottom:16px;}
+  .field label{font-size:13px; font-weight:700; color:var(--text-soft);}
+  .field input, .field textarea, .field select{
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px 14px;
+    color:var(--white); font-size:14.5px; outline:none; transition:border-color 0.2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{border-color:var(--line-strong);}
+  .field textarea{resize:vertical; min-height:80px;}
+  .form-error{color:var(--danger); font-size:13px; margin-bottom:14px; min-height:0;}
+  .form-note{color:var(--text-faint); font-size:12.5px; margin-top:16px; text-align:center;}
+  .form-note a{color:var(--cyan); font-weight:700;}
+
+  /* ---------- لوحة التحكم ---------- */
+  .admin-toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; flex-wrap:wrap; gap:12px;}
+  .admin-table{display:flex; flex-direction:column; gap:10px;}
+  .admin-row{display:flex; align-items:center; gap:14px; background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius-md); padding:14px 18px;}
+  .admin-row .ar-title{flex:1; font-weight:700; font-size:14.5px; color:var(--white);}
+  .admin-row .ar-sub{font-size:12px; color:var(--text-faint);}
+  .admin-actions{display:flex; gap:8px;}
+
+  .material-row-edit{display:flex; gap:8px; margin-bottom:8px; align-items:center;}
+  .material-row-edit input{flex:1;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{position:fixed; inset:0; z-index:100; background:rgba(5,7,12,0.72); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; visibility:hidden; transition:opacity 0.25s, visibility 0.25s;}
+  .modal-overlay.open{opacity:1; visibility:visible;}
+  .modal-box{background:var(--bg-elevated); border:1px solid var(--line-strong); border-radius:var(--radius-lg); padding:30px; max-width:560px; width:100%; max-height:86vh; overflow-y:auto;}
+  .modal-box h3{font-size:19px; font-weight:800; margin-bottom:20px; color:var(--white);}
+  .modal-footer{display:flex; gap:10px; justify-content:flex-end; margin-top:10px;}
+
+  .toast{position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); z-index:200; background:var(--bg-elevated); border:1px solid var(--line-strong); border-radius:100px; padding:12px 24px; font-size:13.5px; font-weight:700; color:var(--white); opacity:0; visibility:hidden; transition:all 0.3s var(--ease);}
+  .toast.show{opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);}
+  .toast.error{border-color:rgba(255,92,92,0.5); color:var(--danger);}
+
+  .back-link{display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--text-soft); margin-bottom:20px;}
+  .back-link:hover{color:var(--white);}
+
+  @media (max-width:980px){
+    .courses-grid{grid-template-columns:1fr;}
+    .navbar{padding:12px 16px;}
+    .nav-link span.nl-text{display:none;}
+    #app{padding:28px 16px 60px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+
+<nav class="navbar">
+  <a href="#/" class="nav-brand"><span class="nb-mark">ت</span> تعلّم</a>
+  <div class="nav-links" id="navLinks"></div>
+</nav>
+
+<div id="app"></div>
+<div class="modal-overlay" id="modalOverlay"><div class="modal-box" id="modalBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================
+     إعداد Firebase
+     ============================================ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyCcY2m8wz4kNEHbbI5cS9uzsTVGCJ_s_CI",
+    authDomain: "educational-platform-ta3llam.firebaseapp.com",
+    projectId: "educational-platform-ta3llam",
+    storageBucket: "educational-platform-ta3llam.firebasestorage.app",
+    messagingSenderId: "969436829993",
+    appId: "1:969436829993:web:3f02055b1e2f43819bbf38",
+    measurementId: "G-HHH0KHG6TQ"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const ADMIN_EMAILS = ["opaidamazed@gmail.com", "obaidamazed@gmail.com", "creatixstudio1@gmail.com"];
+
+  const CATEGORIES = [
+    { key:"editing", label:"المونتاج", icon:"🎬" },
+    { key:"design",  label:"التصميم",  icon:"🎨" },
+    { key:"programming", label:"البرمجة", icon:"💻" }
+  ];
+  function catInfo(key){ return CATEGORIES.find(c => c.key === key) || { key, label:key, icon:"📚" }; }
+
+  let currentUser = null;
+  let isAdmin = false;
+
+  /* ============================================
+     أدوات مساعدة عامة
+     ============================================ */
+  const appEl = document.getElementById("app");
+  const navLinksEl = document.getElementById("navLinks");
+  const toastEl = document.getElementById("toast");
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalBox = document.getElementById("modalBox");
+
+  function showToast(msg, isError){
+    toastEl.textContent = msg;
+    toastEl.classList.toggle("error", !!isError);
+    toastEl.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toastEl.classList.remove("show"), 3200);
+  }
+
+  function esc(s){ return String(s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  function openModal(html){ modalBox.innerHTML = html; modalOverlay.classList.add("open"); }
+  function closeModal(){ modalOverlay.classList.remove("open"); modalBox.innerHTML = ""; }
+  modalOverlay.addEventListener("click", (e) => { if(e.target === modalOverlay) closeModal(); });
+
+  function extractYouTubeId(url){
+    if(!url) return "";
+    const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+    return m ? m[1] : (/^[\w-]{11}$/.test(url.trim()) ? url.trim() : "");
+  }
+
+  /* ============================================
+     شريط التنقل — يُعاد رسمه حسب حالة الدخول
+     ============================================ */
+  function renderNav(){
+    const hash = location.hash || "#/";
+    let html = `<a href="#/" class="nav-link ${hash==="#/"?"active":""}">الرئيسية</a>`;
+    if(isAdmin){
+      html += `<a href="#/admin" class="nav-link admin ${hash.startsWith("#/admin")?"active":""}">لوحة التحكم</a>`;
+    }
+    if(currentUser){
+      const initial = (currentUser.displayName || currentUser.email || "?").trim()[0].toUpperCase();
+      html += `<div class="user-chip"><div class="user-avatar">${esc(initial)}</div><span class="nl-text">${esc(currentUser.displayName || currentUser.email)}</span></div>`;
+      html += `<button class="btn btn-sm" id="logoutBtn">خروج</button>`;
+    } else {
+      html += `<a href="#/login" class="btn btn-sm btn-primary">تسجيل الدخول</a>`;
+    }
+    navLinksEl.innerHTML = html;
+    const lo = document.getElementById("logoutBtn");
+    if(lo) lo.addEventListener("click", () => auth.signOut());
+  }
+
+  /* ============================================
+     Router
+     ============================================ */
+  const routes = [];
+  function route(pattern, handler){ routes.push({ pattern, handler }); }
+  function matchRoute(hash){
+    for(const r of routes){
+      const m = hash.match(r.pattern);
+      if(m) return { handler:r.handler, params:m.slice(1) };
+    }
+    return null;
+  }
+  function navigate(){
+    renderNav();
+    const hash = location.hash || "#/";
+    const found = matchRoute(hash);
+    window.scrollTo({top:0});
+    if(found) found.handler(...found.params);
+    else appEl.innerHTML = `<div class="wrap"><div class="empty-note">الصفحة مش موجودة.</div></div>`;
+  }
+  window.addEventListener("hashchange", navigate);
+
+  function requireAuth(next){
+    if(currentUser) return next();
+    appEl.innerHTML = renderLoginTemplate("لازم تسجل دخول الأول عشان تقدر تشوف المحتوى دا.");
+    bindLoginForm();
+  }
+  function requireAdmin(next){
+    if(isAdmin) return next();
+    appEl.innerHTML = `<div class="wrap"><div class="empty-note">الصفحة دي للأدمن بس.</div></div>`;
+  }
+
+  /* ============================================
+     الصفحة الرئيسية — عرض الكورسات
+     ============================================ */
+  let activeCatFilter = "all";
+  route(/^#\/$/, async () => {
+    appEl.innerHTML = `
+      <div class="wrap">
+        <div class="eyebrow"><span class="dot"></span> منصة تعلّم</div>
+        <h1 class="page-title">اتعلّم المهارات التكنولوجية والتطبيقية اللي محتاجها فعلًا</h1>
+        <p class="page-lede">مونتاج، تصميم، وبرمجة — كورسات بمحاضرات مسجلة وملفات عملية تقدر ترجعلها في أي وقت.</p>
+        <div class="cat-tabs" id="catTabs"></div>
+        <div id="coursesGrid"><div class="spinner"></div></div>
+      </div>`;
+    const tabsEl = document.getElementById("catTabs");
+    const tabs = [{key:"all", label:"الكل"}].concat(CATEGORIES.map(c => ({key:c.key, label:c.label})));
+    tabsEl.innerHTML = tabs.map(t => `<button class="cat-tab ${activeCatFilter===t.key?"active":""}" data-cat="${t.key}">${t.label}</button>`).join("");
+    tabsEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".cat-tab"); if(!btn) return;
+      activeCatFilter = btn.dataset.cat;
+      navigate();
+    });
+
+    try{
+      const snap = await db.collection("courses").orderBy("order","asc").get();
+      const courses = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      const filtered = activeCatFilter === "all" ? courses : courses.filter(c => c.category === activeCatFilter);
+      const gridEl = document.getElementById("coursesGrid");
+      if(!filtered.length){
+        gridEl.innerHTML = `<div class="empty-note">لسه مفيش كورسات هنا${activeCatFilter!=="all"?" في القسم دا":""}.</div>`;
+        return;
+      }
+      gridEl.innerHTML = `<div class="courses-grid">` + filtered.map(c => {
+        const cat = catInfo(c.category);
+        return `<a href="#/course/${c.id}" class="course-card">
+          <div class="course-icon">${esc(c.icon || cat.icon)}</div>
+          <div class="course-cat-tag">${esc(cat.label)}</div>
+          <h3>${esc(c.title)}</h3>
+          <p>${esc(c.description||"")}</p>
+        </a>`;
+      }).join("") + `</div>`;
+    }catch(err){
+      document.getElementById("coursesGrid").innerHTML = `<div class="empty-note">حصل خطأ في تحميل الكورسات: ${esc(err.message)}</div>`;
+    }
+  });
+
+  /* ============================================
+     صفحة الكورس — قائمة المحاضرات
+     ============================================ */
+  route(/^#\/course\/([^/]+)$/, async (courseId) => {
+    appEl.innerHTML = `<div class="wrap"><div class="spinner"></div></div>`;
+    try{
+      const courseDoc = await db.collection("courses").doc(courseId).get();
+      if(!courseDoc.exists){ appEl.innerHTML = `<div class="wrap"><div class="empty-note">الكورس مش موجود.</div></div>`; return; }
+      const course = courseDoc.data();
+      const cat = catInfo(course.category);
+      const lecSnap = await db.collection("courses").doc(courseId).collection("lectures").orderBy("order","asc").get();
+      const lectures = lecSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+      appEl.innerHTML = `
+        <div class="wrap">
+          <a href="#/" class="back-link">← رجوع للكورسات</a>
+          <div class="course-header">
+            <div class="course-icon">${esc(course.icon || cat.icon)}</div>
+            <div>
+              <div class="course-cat-tag">${esc(cat.label)}</div>
+              <h1 class="page-title" style="margin-top:6px;">${esc(course.title)}</h1>
+              <p class="page-lede">${esc(course.description||"")}</p>
+            </div>
+          </div>
+          <div class="lectures-list" id="lecturesList"></div>
+        </div>`;
+
+      const listEl = document.getElementById("lecturesList");
+      if(!lectures.length){
+        listEl.innerHTML = `<div class="empty-note">لسه مفيش محاضرات مضافة للكورس دا.</div>`;
+        return;
+      }
+      listEl.innerHTML = lectures.map((l,i) => `
+        <a href="#/lecture/${courseId}/${l.id}" class="lecture-row">
+          <div class="lecture-num">${String(i+1).padStart(2,"0")}</div>
+          <div class="lecture-info"><h4>${esc(l.title)}</h4><p>${esc(l.description||"")}</p></div>
+          ${currentUser ? `` : `<div class="lecture-lock">🔒 يتطلب تسجيل دخول</div>`}
+        </a>`).join("");
+    }catch(err){
+      appEl.innerHTML = `<div class="wrap"><div class="empty-note">حصل خطأ: ${esc(err.message)}</div></div>`;
+    }
+  });
+
+  /* ============================================
+     صفحة المحاضرة — الفيديو والملفات (تتطلب دخول)
+     ============================================ */
+  route(/^#\/lecture\/([^/]+)\/([^/]+)$/, (courseId, lectureId) => {
+    requireAuth(async () => {
+      appEl.innerHTML = `<div class="wrap"><div class="spinner"></div></div>`;
+      try{
+        const lecDoc = await db.collection("courses").doc(courseId).collection("lectures").doc(lectureId).get();
+        if(!lecDoc.exists){ appEl.innerHTML = `<div class="wrap"><div class="empty-note">المحاضرة مش موجودة.</div></div>`; return; }
+        const lec = lecDoc.data();
+        const ytId = extractYouTubeId(lec.youtubeUrl);
+        const materials = Array.isArray(lec.materials) ? lec.materials : [];
+
+        appEl.innerHTML = `
+          <div class="wrap">
+            <a href="#/course/${courseId}" class="back-link">← رجوع لمحاضرات الكورس</a>
+            <h1 class="page-title" style="margin-bottom:6px;">${esc(lec.title)}</h1>
+            <p class="page-lede" style="margin-bottom:24px;">${esc(lec.description||"")}</p>
+            ${ytId ? `<div class="video-frame"><iframe src="https://www.youtube.com/embed/${ytId}" title="${esc(lec.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : `<div class="empty-note">مفيش فيديو مرفوع للمحاضرة دي لسه.</div>`}
+            <div class="materials-box">
+              <h4>📎 ملفات ومرفقات المحاضرة</h4>
+              ${materials.length ? materials.map(m => `<div class="material-item"><span>${esc(m.name)}</span><a href="${esc(m.url)}" target="_blank" rel="noopener">تحميل ↗</a></div>`).join("") : `<div style="color:var(--text-faint); font-size:13px;">لا يوجد ملفات مرفقة لهذه المحاضرة.</div>`}
+            </div>
+          </div>`;
+      }catch(err){
+        appEl.innerHTML = `<div class="wrap"><div class="empty-note">حصل خطأ: ${esc(err.message)}</div></div>`;
+      }
+    });
+  });
+
+  /* ============================================
+     تسجيل الدخول / إنشاء حساب
+     ============================================ */
+  function renderLoginTemplate(noteMsg){
+    return `
+      <div class="wrap-narrow">
+        <div class="eyebrow"><span class="dot"></span> حسابك</div>
+        <h1 class="page-title" style="font-size:26px;">تسجيل الدخول</h1>
+        ${noteMsg ? `<p class="page-lede">${esc(noteMsg)}</p>` : ``}
+        <div class="auth-card" style="margin-top:22px;">
+          <div class="form-error" id="authError"></div>
+          <div class="field" id="nameField" style="display:none;"><label>الاسم</label><input type="text" id="authName" placeholder="اسمك بالكامل"></div>
+          <div class="field"><label>الإيميل</label><input type="email" id="authEmail" placeholder="you@example.com"></div>
+          <div class="field"><label>الباسورد</label><input type="password" id="authPass" placeholder="6 أحرف على الأقل"></div>
+          <button class="btn btn-primary" id="authSubmit" style="width:100%; padding:12px;">دخول</button>
+          <p class="form-note">لسه معندكش حساب؟ <a href="#" id="authToggle">اعمل حساب جديد</a></p>
+        </div>
+      </div>`;
+  }
+
+  route(/^#\/login$/, () => {
+    if(currentUser){ location.hash = "#/"; return; }
+    appEl.innerHTML = renderLoginTemplate();
+    bindLoginForm();
+  });
+
+  function bindLoginForm(){
+    let mode = "login";
+    const nameField = document.getElementById("nameField");
+    const toggle = document.getElementById("authToggle");
+    const submitBtn = document.getElementById("authSubmit");
+    const errEl = document.getElementById("authError");
+
+    toggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      mode = mode === "login" ? "signup" : "login";
+      nameField.style.display = mode === "signup" ? "flex" : "none";
+      submitBtn.textContent = mode === "signup" ? "إنشاء الحساب" : "دخول";
+      toggle.textContent = mode === "signup" ? "عندك حساب بالفعل؟ سجّل دخول" : "اعمل حساب جديد";
+      errEl.textContent = "";
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      const email = document.getElementById("authEmail").value.trim();
+      const pass = document.getElementById("authPass").value;
+      const name = document.getElementById("authName").value.trim();
+      errEl.textContent = "";
+      if(!email || !pass){ errEl.textContent = "من فضلك اكتب الإيميل والباسورد."; return; }
+      submitBtn.disabled = true;
+      try{
+        if(mode === "signup"){
+          const cred = await auth.createUserWithEmailAndPassword(email, pass);
+          if(name) await cred.user.updateProfile({ displayName:name });
+          await db.collection("users").doc(cred.user.uid).set({ email, displayName:name||"", createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+          showToast("تم إنشاء الحساب بنجاح 🎉");
+        } else {
+          await auth.signInWithEmailAndPassword(email, pass);
+          showToast("تم تسجيل الدخول");
+        }
+        location.hash = "#/";
+      }catch(err){
+        errEl.textContent = translateAuthError(err.code) || err.message;
+      }finally{
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  function translateAuthError(code){
+    const map = {
+      "auth/email-already-in-use":"الإيميل دا مستخدم بالفعل.",
+      "auth/invalid-email":"صيغة الإيميل مش صحيحة.",
+      "auth/weak-password":"الباسورد لازم يكون 6 أحرف على الأقل.",
+      "auth/user-not-found":"مفيش حساب بالإيميل دا.",
+      "auth/wrong-password":"الباسورد غلط.",
+      "auth/invalid-credential":"بيانات الدخول مش صحيحة."
+    };
+    return map[code];
+  }
+
+  /* ============================================
+     لوحة التحكم — الأدمن
+     ============================================ */
+  route(/^#\/admin$/, () => requireAdmin(renderAdminHome));
+
+  async function renderAdminHome(){
+    appEl.innerHTML = `
+      <div class="wrap">
+        <div class="admin-toolbar">
+          <div><div class="eyebrow"><span class="dot"></span> لوحة التحكم</div><h1 class="page-title" style="font-size:26px;">إدارة الكورسات</h1></div>
+          <button class="btn btn-primary" id="addCourseBtn">+ إضافة كورس جديد</button>
+        </div>
+        <div class="admin-table" id="adminCoursesList"><div class="spinner"></div></div>
+      </div>`;
+    document.getElementById("addCourseBtn").addEventListener("click", () => openCourseModal());
+    await loadAdminCourses();
+  }
+
+  async function loadAdminCourses(){
+    const listEl = document.getElementById("adminCoursesList");
+    try{
+      const snap = await db.collection("courses").orderBy("order","asc").get();
+      const courses = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      if(!courses.length){ listEl.innerHTML = `<div class="empty-note">مفيش كورسات لسه — دوس "إضافة كورس جديد".</div>`; return; }
+      listEl.innerHTML = courses.map(c => `
+        <div class="admin-row">
+          <span style="font-size:22px;">${esc(c.icon || catInfo(c.category).icon)}</span>
+          <div class="ar-title">${esc(c.title)}<div class="ar-sub">${esc(catInfo(c.category).label)} · ترتيب ${esc(c.order)}</div></div>
+          <div class="admin-actions">
+            <a href="#/admin/course/${c.id}" class="btn btn-sm">المحاضرات</a>
+            <button class="btn btn-sm" data-edit="${c.id}">تعديل</button>
+            <button class="btn btn-sm btn-danger" data-del="${c.id}">حذف</button>
+          </div>
+        </div>`).join("");
+      listEl.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => openCourseModal(courses.find(c=>c.id===b.dataset.edit))));
+      listEl.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => deleteCourse(b.dataset.del)));
+    }catch(err){
+      listEl.innerHTML = `<div class="empty-note">حصل خطأ: ${esc(err.message)}</div>`;
+    }
+  }
+
+  function openCourseModal(course){
+    const isEdit = !!course;
+    openModal(`
+      <h3>${isEdit ? "تعديل الكورس" : "إضافة كورس جديد"}</h3>
+      <div class="form-error" id="courseFormError"></div>
+      <div class="field"><label>اسم الكورس</label><input type="text" id="cTitle" value="${isEdit?esc(course.title):""}"></div>
+      <div class="field"><label>وصف قصير</label><textarea id="cDesc">${isEdit?esc(course.description||""):""}</textarea></div>
+      <div class="field"><label>التصنيف</label>
+        <select id="cCat">${CATEGORIES.map(cat => `<option value="${cat.key}" ${isEdit&&course.category===cat.key?"selected":""}>${cat.label}</option>`).join("")}</select>
+      </div>
+      <div class="field"><label>أيقونة (إيموجي اختياري)</label><input type="text" id="cIcon" placeholder="🎬" value="${isEdit?esc(course.icon||""):""}"></div>
+      <div class="field"><label>ترتيب العرض (رقم)</label><input type="number" id="cOrder" value="${isEdit?esc(course.order??0):0}"></div>
+      <div class="modal-footer">
+        <button class="btn" id="cancelCourseBtn">إلغاء</button>
+        <button class="btn btn-primary" id="saveCourseBtn">${isEdit?"حفظ التعديلات":"إضافة الكورس"}</button>
+      </div>
+    `);
+    document.getElementById("cancelCourseBtn").addEventListener("click", closeModal);
+    document.getElementById("saveCourseBtn").addEventListener("click", async () => {
+      const title = document.getElementById("cTitle").value.trim();
+      const errEl = document.getElementById("courseFormError");
+      if(!title){ errEl.textContent = "اسم الكورس مطلوب."; return; }
+      const data = {
+        title,
+        description: document.getElementById("cDesc").value.trim(),
+        category: document.getElementById("cCat").value,
+        icon: document.getElementById("cIcon").value.trim(),
+        order: Number(document.getElementById("cOrder").value) || 0
+      };
+      try{
+        if(isEdit){ await db.collection("courses").doc(course.id).update(data); showToast("تم تعديل الكورس"); }
+        else{ data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await db.collection("courses").add(data); showToast("تم إضافة الكورس"); }
+        closeModal();
+        loadAdminCourses();
+      }catch(err){ errEl.textContent = err.message; }
+    });
+  }
+
+  async function deleteCourse(id){
+    if(!confirm("متأكد إنك عايز تحذف الكورس دا وكل محاضراته؟")) return;
+    try{
+      const lecSnap = await db.collection("courses").doc(id).collection("lectures").get();
+      const batch = db.batch();
+      lecSnap.docs.forEach(d => batch.delete(d.ref));
+      batch.delete(db.collection("courses").doc(id));
+      await batch.commit();
+      showToast("تم حذف الكورس");
+      loadAdminCourses();
+    }catch(err){ showToast(err.message, true); }
+  }
+
+  /* ---------- إدارة محاضرات كورس معيّن ---------- */
+  route(/^#\/admin\/course\/([^/]+)$/, (courseId) => requireAdmin(() => renderAdminLectures(courseId)));
+
+  async function renderAdminLectures(courseId){
+    appEl.innerHTML = `<div class="wrap"><div class="spinner"></div></div>`;
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+    if(!courseDoc.exists){ appEl.innerHTML = `<div class="wrap"><div class="empty-note">الكورس مش موجود.</div></div>`; return; }
+    const course = courseDoc.data();
+
+    appEl.innerHTML = `
+      <div class="wrap">
+        <a href="#/admin" class="back-link">← رجوع لكل الكورسات</a>
+        <div class="admin-toolbar">
+          <div><div class="eyebrow"><span class="dot"></span> ${esc(course.title)}</div><h1 class="page-title" style="font-size:24px;">إدارة المحاضرات</h1></div>
+          <button class="btn btn-primary" id="addLectureBtn">+ إضافة محاضرة</button>
+        </div>
+        <div class="admin-table" id="adminLecturesList"><div class="spinner"></div></div>
+      </div>`;
+    document.getElementById("addLectureBtn").addEventListener("click", () => openLectureModal(courseId));
+    await loadAdminLectures(courseId);
+  }
+
+  async function loadAdminLectures(courseId){
+    const listEl = document.getElementById("adminLecturesList");
+    try{
+      const snap = await db.collection("courses").doc(courseId).collection("lectures").orderBy("order","asc").get();
+      const lectures = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      if(!lectures.length){ listEl.innerHTML = `<div class="empty-note">مفيش محاضرات لسه — دوس "إضافة محاضرة".</div>`; return; }
+      listEl.innerHTML = lectures.map((l,i) => `
+        <div class="admin-row">
+          <div class="lecture-num">${String(i+1).padStart(2,"0")}</div>
+          <div class="ar-title">${esc(l.title)}<div class="ar-sub">${(l.materials||[]).length} ملف مرفق</div></div>
+          <div class="admin-actions">
+            <button class="btn btn-sm" data-edit="${l.id}">تعديل</button>
+            <button class="btn btn-sm btn-danger" data-del="${l.id}">حذف</button>
+          </div>
+        </div>`).join("");
+      listEl.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => openLectureModal(courseId, lectures.find(l=>l.id===b.dataset.edit))));
+      listEl.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => deleteLecture(courseId, b.dataset.del)));
+    }catch(err){
+      listEl.innerHTML = `<div class="empty-note">حصل خطأ: ${esc(err.message)}</div>`;
+    }
+  }
+
+  function openLectureModal(courseId, lecture){
+    const isEdit = !!lecture;
+    const materials = isEdit && Array.isArray(lecture.materials) ? lecture.materials : [];
+    openModal(`
+      <h3>${isEdit ? "تعديل المحاضرة" : "إضافة محاضرة جديدة"}</h3>
+      <div class="form-error" id="lecFormError"></div>
+      <div class="field"><label>اسم المحاضرة</label><input type="text" id="lTitle" value="${isEdit?esc(lecture.title):""}"></div>
+      <div class="field"><label>وصف قصير</label><textarea id="lDesc">${isEdit?esc(lecture.description||""):""}</textarea></div>
+      <div class="field"><label>رابط فيديو يوتيوب (Unlisted)</label><input type="text" id="lYt" placeholder="https://youtu.be/..." value="${isEdit?esc(lecture.youtubeUrl||""):""}"></div>
+      <div class="field"><label>ترتيب العرض</label><input type="number" id="lOrder" value="${isEdit?esc(lecture.order??0):0}"></div>
+      <div class="field">
+        <label>الملفات المرفقة (اسم الملف + رابط)</label>
+        <div id="materialsRows"></div>
+        <button type="button" class="btn btn-sm" id="addMaterialRow" style="align-self:flex-start; margin-top:4px;">+ إضافة ملف</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="cancelLecBtn">إلغاء</button>
+        <button class="btn btn-primary" id="saveLecBtn">${isEdit?"حفظ التعديلات":"إضافة المحاضرة"}</button>
+      </div>
+    `);
+    const rowsEl = document.getElementById("materialsRows");
+    function addMaterialRow(name, url){
+      const row = document.createElement("div");
+      row.className = "material-row-edit";
+      row.innerHTML = `<input type="text" placeholder="اسم الملف" class="m-name" value="${esc(name||"")}"><input type="text" placeholder="الرابط" class="m-url" value="${esc(url||"")}"><button type="button" class="btn btn-sm btn-danger m-remove">حذف</button>`;
+      row.querySelector(".m-remove").addEventListener("click", () => row.remove());
+      rowsEl.appendChild(row);
+    }
+    materials.forEach(m => addMaterialRow(m.name, m.url));
+    document.getElementById("addMaterialRow").addEventListener("click", () => addMaterialRow());
+    document.getElementById("cancelLecBtn").addEventListener("click", closeModal);
+
+    document.getElementById("saveLecBtn").addEventListener("click", async () => {
+      const title = document.getElementById("lTitle").value.trim();
+      const errEl = document.getElementById("lecFormError");
+      if(!title){ errEl.textContent = "اسم المحاضرة مطلوب."; return; }
+      const materialsData = Array.from(rowsEl.querySelectorAll(".material-row-edit")).map(r => ({
+        name: r.querySelector(".m-name").value.trim(),
+        url: r.querySelector(".m-url").value.trim()
+      })).filter(m => m.name && m.url);
+
+      const data = {
+        title,
+        description: document.getElementById("lDesc").value.trim(),
+        youtubeUrl: document.getElementById("lYt").value.trim(),
+        order: Number(document.getElementById("lOrder").value) || 0,
+        materials: materialsData
+      };
+      try{
+        const col = db.collection("courses").doc(courseId).collection("lectures");
+        if(isEdit){ await col.doc(lecture.id).update(data); showToast("تم تعديل المحاضرة"); }
+        else{ data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await col.add(data); showToast("تم إضافة المحاضرة"); }
+        closeModal();
+        loadAdminLectures(courseId);
+      }catch(err){ errEl.textContent = err.message; }
+    });
+  }
+
+  async function deleteLecture(courseId, lectureId){
+    if(!confirm("متأكد إنك عايز تحذف المحاضرة دي؟")) return;
+    try{
+      await db.collection("courses").doc(courseId).collection("lectures").doc(lectureId).delete();
+      showToast("تم حذف المحاضرة");
+      loadAdminLectures(courseId);
+    }catch(err){ showToast(err.message, true); }
+  }
+
+  /* ============================================
+     مراقبة حالة تسجيل الدخول
+     ============================================ */
+  auth.onAuthStateChanged((user) => {
+    currentUser = user;
+    isAdmin = !!(user && ADMIN_EMAILS.includes(user.email));
+    navigate();
+  });
+
+  if(!location.hash) location.hash = "#/";
+  navigate();
+})();
+</script>
+</body>
+</html>
+
