@@ -21,6 +21,7 @@
   --blue:#1AA7E0;
   --green:#3ED598;
   --grad: linear-gradient(135deg, var(--blue), var(--green));
+  --icon-grad: linear-gradient(135deg, #1FC8B6, #123A6B);
   --bg:#F6F8FB;
   --card:#FFFFFF;
   --text:#151A2E;
@@ -100,6 +101,28 @@ img{max-width:100%; display:block}
   font-weight:600; font-size:14px; color:var(--muted);
 }
 .cat-chip.active{background:var(--navy); color:#fff; border-color:var(--navy)}
+
+/* ---------- بطاقات المجالات التعليمية ---------- */
+.cat-group{margin-bottom:34px}
+.cat-group:last-child{margin-bottom:0}
+.cat-group-title{font-weight:800; font-size:16.5px; margin-bottom:14px; display:flex; align-items:center; gap:10px}
+.cat-group-title::before{content:''; width:4px; height:18px; background:var(--icon-grad); border-radius:4px}
+.cat-cards-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:18px}
+.cat-card{
+  background:#fff; border:1px solid var(--border); border-radius:var(--radius);
+  padding:22px; text-align:center; transition:.18s; display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.cat-card:hover{box-shadow:var(--shadow); transform:translateY(-3px); border-color:var(--blue)}
+.cat-card.disabled{opacity:.55; cursor:default}
+.cat-card.disabled:hover{box-shadow:none; transform:none; border-color:var(--border)}
+.cat-card .cat-icon{
+  width:56px; height:56px; border-radius:50%; background:var(--icon-grad); color:#fff;
+  display:flex; align-items:center; justify-content:center; margin-bottom:4px;
+}
+.cat-card .cat-icon svg{width:26px; height:26px}
+.cat-card .cat-name{font-weight:800; font-size:15.5px}
+.cat-card .cat-desc{color:var(--muted); font-size:13px}
+.soon-tag{font-size:11px; font-weight:700; color:var(--blue); background:#E7F3FD; padding:2px 10px; border-radius:999px; margin-top:2px}
 
 /* ---------- بطاقات الكورسات ---------- */
 .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:20px}
@@ -303,12 +326,39 @@ const db = firebase.firestore();
 
 /* ======================= الثوابت ======================= */
 const ADMIN_EMAILS = ['opaidamazed@gmail.com', 'obaidamazed@gmail.com', 'creatixstudio1@gmail.com'];
-const CATEGORIES = [
-  { id: 'montage', label: 'مونتاج الفيديو' },
-  { id: 'design', label: 'تصميم جرافيك' },
-  { id: 'programming', label: 'برمجة وتطوير' },
-  { id: 'marketing', label: 'تسويق رقمي' }
+/* أيقونات SVG موحدة (بديل الإيموجي) */
+const ICONS = {
+  trending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>',
+  code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+  palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.9-.5-1.4 0-1.1.9-2 2-2h2.3c1.8 0 3.2-1.4 3.2-3.2C20.5 6.4 16.7 2 12 2z"/><circle cx="6.5" cy="11.5" r="1.3"/><circle cx="9.5" cy="7.5" r="1.3"/><circle cx="14.5" cy="7.5" r="1.3"/><circle cx="17.5" cy="11.5" r="1.3"/></svg>',
+  film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l1.5-3.5A2 2 0 0 1 7.3 3h9.4a2 2 0 0 1 1.8 1.5L20 8"/><rect x="3" y="8" width="18" height="12" rx="2"/><line x1="7" y1="8" x2="9" y2="4.5"/><line x1="13" y1="8" x2="15" y2="4.5"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><polyline points="9 12 11 14 15 10"/></svg>',
+  cpu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'
+};
+
+/* مجموعات المجالات المعروضة بالصفحة الرئيسية */
+const CATEGORY_GROUPS = [
+  { title: 'المجالات التعليمية', items: [
+      { id:'montage', label:'مونتاج الفيديو', desc:'تحرير ومونتاج الفيديوهات باحتراف', icon:'film' },
+      { id:'design', label:'تصميم جرافيك', desc:'هوية بصرية ومحتوى تصميمي احترافي', icon:'palette' },
+      { id:'programming', label:'برمجة وتطوير', desc:'بناء مواقع وتطبيقات من الصفر', icon:'code' },
+      { id:'marketing', label:'تسويق رقمي', desc:'استراتيجيات التسويق عبر المنصات الرقمية', icon:'trending' }
+  ]},
+  { title: 'المهارات الحياتية', items: [
+      { id:'english-speaking', label:'اللغة الإنجليزية', desc:'مهارات التحدث (Speaking)', icon:'chat' },
+      { id:'arabic-reading', label:'اللغة العربية', desc:'مهارات القراءة والفهم', icon:'book' },
+      { comingSoon:true, label:'قريبًا: لغات مختلفة', desc:'مجالات لغوية جديدة قريبًا', icon:'clock' }
+  ]},
+  { title: 'مهارات تقنية', items: [
+      { id:'cybersecurity', label:'الأمن السيبراني', desc:'الحماية من الاختراق وأمن المعلومات', icon:'shield' },
+      { id:'software-internals', label:'السوفت وير', desc:'علوم الأجهزة الداخلية والبرمجيات', icon:'cpu' },
+      { comingSoon:true, label:'قريبًا: هارد وير', desc:'علوم الأجهزة المادية', icon:'clock' }
+  ]}
 ];
+const CATEGORIES = CATEGORY_GROUPS.flatMap(g => g.items.filter(i => !i.comingSoon));
 
 function isAdminEmail(email){ return !!email && ADMIN_EMAILS.includes(email); }
 function catLabel(id){ const c = CATEGORIES.find(c=>c.id===id); return c ? c.label : id; }
@@ -442,7 +492,11 @@ function route(){
   const parts = hash.replace('#/','').split('/').filter(Boolean);
 
   if(parts.length === 0) return renderHome();
-  if(parts[0] === 'about') return renderAbout();
+  if(parts[0] === 'about'){
+    pendingScroll = 'aboutSection';
+    history.replaceState(null, '', location.pathname + location.search + '#/');
+    return renderHome();
+  }
   if(parts[0] === 'login') return renderLogin();
   if(parts[0] === 'register') return renderRegister();
   if(parts[0] === 'profile') return guard(renderProfile);
@@ -467,6 +521,7 @@ function guard(renderFn){
 
 /* ======================= الصفحة الرئيسية ======================= */
 let activeCategory = 'all';
+let pendingScroll = null;
 
 async function renderHome(){
   app.innerHTML = `
@@ -480,13 +535,61 @@ async function renderHome(){
         </div>
       </div>
     </section>
+    <section class="section wrap" id="aboutSection">
+      <div class="about-grid">
+        <div>
+          <div class="section-title">من نحن</div>
+          <p style="color:var(--muted)">
+            منصة "تعلّم" مبادرة تهدف لتقديم مهارات تكنولوجية وتطبيقية عملية باللغة العربية،
+            من خلال محاضرين متخصصين وكورسات مصممة بأسلوب مبسط وقابل للتطبيق الفوري.
+          </p>
+        </div>
+        <div class="about-card">
+          <div class="info-row"><span class="k">رؤيتنا</span><span class="v">تعليم عربي عملي للجميع</span></div>
+          <div class="info-row"><span class="k">رسالتنا</span><span class="v">مهارات حقيقية بدون تعقيد</span></div>
+          <div class="info-row" style="border-bottom:none"><span class="k">القيم</span><span class="v">جودة، وضوح، استمرارية</span></div>
+        </div>
+      </div>
+    </section>
+
     <section class="section wrap">
-      <div class="section-title">الأقسام والكورسات</div>
+      <div class="section-title">المجالات التعليمية</div>
+      <div class="section-sub">المجالات المتاحة على المنصة، هيتم إضافة الكورسات فيها تباعًا</div>
+      <div id="catGroupsWrap"></div>
+    </section>
+
+    <section class="section wrap" id="coursesSection">
+      <div class="section-title">الكورسات</div>
       <div class="section-sub">اختر القسم اللي يناسبك وابدأ التعلم</div>
       <div class="cat-filters" id="catFilters"></div>
       <div id="coursesGrid"><div class="loading-line"><div class="spinner"></div>جاري تحميل الكورسات...</div></div>
     </section>
   `;
+
+  const groupsWrap = document.getElementById('catGroupsWrap');
+  groupsWrap.innerHTML = CATEGORY_GROUPS.map(group => `
+    <div class="cat-group">
+      <div class="cat-group-title">${group.title}</div>
+      <div class="cat-cards-grid">
+        ${group.items.map(item => `
+          <button class="cat-card ${item.comingSoon ? 'disabled' : ''}" ${item.comingSoon ? 'disabled' : `data-cat="${item.id}"`}>
+            <div class="cat-icon">${ICONS[item.icon] || ''}</div>
+            <div class="cat-name">${item.label}</div>
+            <div class="cat-desc">${item.desc}</div>
+            ${item.comingSoon ? '<span class="soon-tag">قريبًا</span>' : ''}
+          </button>`).join('')}
+      </div>
+    </div>`).join('');
+
+  groupsWrap.querySelectorAll('.cat-card[data-cat]').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      activeCategory = card.dataset.cat;
+      document.getElementById('coursesSection').scrollIntoView({behavior:'smooth'});
+      renderCoursesGrid();
+      const filtersEl2 = document.getElementById('catFilters');
+      filtersEl2.querySelectorAll('.cat-chip').forEach(b=>b.classList.toggle('active', b.dataset.cat===activeCategory));
+    });
+  });
 
   const filtersEl = document.getElementById('catFilters');
   const cats = [{id:'all', label:'الكل'}, ...CATEGORIES];
@@ -496,6 +599,12 @@ async function renderHome(){
   });
 
   await renderCoursesGrid();
+
+  if(pendingScroll){
+    const target = document.getElementById(pendingScroll);
+    pendingScroll = null;
+    if(target) setTimeout(()=> target.scrollIntoView({behavior:'smooth'}), 50);
+  }
 }
 
 async function renderCoursesGrid(){
@@ -530,27 +639,6 @@ function courseCardHtml(c){
         <div class="card-meta"><span>${escapeHtml(c.instructorName||'')}</span></div>
       </div>
     </a>`;
-}
-
-/* ======================= صفحة من نحن ======================= */
-function renderAbout(){
-  app.innerHTML = `
-    <section class="section wrap">
-      <div class="about-grid">
-        <div>
-          <div class="section-title">من نحن</div>
-          <p style="color:var(--muted)">
-            منصة "تعلّم" مبادرة تهدف لتقديم مهارات تكنولوجية وتطبيقية عملية باللغة العربية،
-            من خلال محاضرين متخصصين وكورسات مصممة بأسلوب مبسط وقابل للتطبيق الفوري.
-          </p>
-        </div>
-        <div class="about-card">
-          <div class="info-row"><span class="k">رؤيتنا</span><span class="v">تعليم عربي عملي للجميع</span></div>
-          <div class="info-row"><span class="k">رسالتنا</span><span class="v">مهارات حقيقية بدون تعقيد</span></div>
-          <div class="info-row" style="border-bottom:none"><span class="k">القيم</span><span class="v">جودة، وضوح، استمرارية</span></div>
-        </div>
-      </div>
-    </section>`;
 }
 
 /* ======================= تسجيل الدخول / إنشاء حساب ======================= */
